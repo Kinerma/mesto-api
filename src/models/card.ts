@@ -8,7 +8,7 @@ export interface ICard {
   createdAt: Date
 }
 
-const cardSchema = new Schema({
+const cardSchema = new Schema<ICard>({
   name: {
     type: String,
     minLength: 2,

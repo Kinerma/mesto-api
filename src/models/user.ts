@@ -6,7 +6,7 @@ export interface IUser {
   avatar: string
 }
 
-const userSchema = new Schema({
+const userSchema = new Schema<IUser>({
   name: {
     type: String,
     minLength: 2,
