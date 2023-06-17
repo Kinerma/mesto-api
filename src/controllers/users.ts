@@ -25,18 +25,18 @@ export const createUser = (req: Request, res: Response) => {
 
 export const updateUser = (req: any, res: Response) => {
   const {name, about} = req.body
-  User.findByIdAndUpdate(req.user._id, {name, about}, { new: true, runValidators: true })
+  User.findByIdAndUpdate(req.user._id, {name, about}, { new: true, runValidators: true})
     .then((user) => {
       if (!user) {
-        return res.status(404).send({ message: 'Пользователь не найден' })
+        return res.status(404).send({ message: 'Пользователь не найден'})
       }
-      return res.send({ data: user })
+      return res.send({ data: user})
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(400).send({ message: 'Переданы некорректные данные при обновлении профиля' })
+        return res.status(400).send({ message: 'Переданы некорректные данные при обновлении профиля'})
       }
-      return res.status(500).send({ message: 'Произошла ошибка' })
+      return res.status(500).send({ message: 'Произошла ошибка'})
     });
 }
 
@@ -45,14 +45,14 @@ export const updateAvatar = (req: any, res: Response) => {
   User.findByIdAndUpdate(req.user._id, {avatar}, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        return res.status(404).send({ message: 'Пользователь не найден' });
+        return res.status(404).send({ message: 'Пользователь не найден'})
       }
-      return res.send({ data: user });
+      return res.send({ data: user})
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(400).send({ message: 'Переданы некорректные данные при обновлении аватара' });
+        return res.status(400).send({ message: 'Переданы некорректные данные при обновлении аватара'})
       }
-      return res.status(500).send({ message: 'Произошла ошибка' });
+      return res.status(500).send({ message: 'Произошла ошибка'})
     });
 }
