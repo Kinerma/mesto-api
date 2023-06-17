@@ -1,10 +1,10 @@
 import {Router} from "express";
 import {returnCards, deleteCardId, createCard} from "../controllers/cards";
 
-const router = Router()
+const cardRouter = Router()
 
-router.get('/', returnCards)
-router.delete('/:cardId', deleteCardId)
-router.post('/', createCard)
+cardRouter.get('/', returnCards)
+cardRouter.delete('/:cardId', deleteCardId)
+cardRouter.post('/', createCard)
 
-export default router
+export default cardRouter
