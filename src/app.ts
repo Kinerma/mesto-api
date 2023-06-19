@@ -1,16 +1,17 @@
 import express, { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
-import routes from "./routes/routes";
+import routes from './routes/routes';
 
-const { PORT = 3000 } = process.env
-const app = express()
-app.use(express.json())
-app.use(express.urlencoded())
-mongoose.connect('mongodb://localhost:27017/mestodb')
+const { PORT = 3000 } = process.env;
+const app = express();
+mongoose.set('strictQuery', false);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
 
 app.use((req: any, res: Response, next: NextFunction) => {
   req.user = {
-    _id: '5d8b8592978f8bd833ca8133',
+    _id: '6490a316c4666c2129e37086',
   };
   next();
 });
