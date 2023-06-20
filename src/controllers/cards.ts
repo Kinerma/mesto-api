@@ -11,7 +11,7 @@ export const deleteCardId = (req: Request, res: Response) => {
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(ERROR_NOT_FOUND).send({ message: 'Карточка не найдена' })
+        return res.status(ERROR_NOT_FOUND).send({ message: 'Карточка не найдена' });
       }
       return res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' });
     });
