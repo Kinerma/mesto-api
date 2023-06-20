@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response } from 'express';
+import express, { NextFunction, Response } from 'express';
 import mongoose from 'mongoose';
 import routes from './routes/routes';
 
@@ -17,8 +17,4 @@ app.use((req: any, res: Response, next: NextFunction) => {
 });
 
 app.use(routes);
-app.use((req: Request, res: Response) => {
-  res.status(404).send({ message: 'Запрашиваемый ресурс не найден' });
-});
-
 app.listen(PORT);
