@@ -8,10 +8,15 @@ export const returnCards = (req: Request, res: Response) => Card.find({})
 
 export const deleteCardId = (req: Request, res: Response) => {
   Card.findByIdAndRemove(req.params.cardId)
-    .then((card) => res.send({ data: card }))
+    .then((card) => {
+      if (!card) {
+        return res.status(ERROR_NOT_FOUND).send({ message: 'Карточка не найдена' });
+      }
+      return res.send({ data: card });
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(ERROR_NOT_FOUND).send({ message: 'Карточка не найдена' });
+        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Передан не корректный id карточки' });
       }
       return res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' });
     });

@@ -8,10 +8,15 @@ export const returnUsers = (req: Request, res: Response) => User.find({})
 
 export const returnUsersId = (req: Request, res: Response) => {
   User.findById(req.params.userId)
-    .then((user) => res.send({ data: user }))
+    .then((user) => {
+      if (!user) {
+        return res.status(ERROR_NOT_FOUND).send({ message: 'Пользователь не найден' });
+      }
+      return res.send({ data: user });
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(ERROR_NOT_FOUND).send({ message: 'Пользователь не найден' });
+        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Передан некорректный id профиля' });
       }
       return res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' });
     });
