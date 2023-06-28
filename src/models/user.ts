@@ -1,4 +1,5 @@
 import { model, Schema } from 'mongoose';
+// @ts-ignore
 import validator from 'validator';
 
 export interface IUser {
