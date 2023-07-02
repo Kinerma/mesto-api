@@ -1,67 +1,80 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import Card from '../models/card';
-import { DEFAULT_ERROR, ERROR_NOT_FOUND, INCORRECT_DATA_ERROR } from '../errors/errors';
+import IncorrectData from '../errors/centralized/incorrect-data';
+import NotFound from '../errors/centralized/not-found';
+import DeletionError from '../errors/centralized/deletion';
 
-export const returnCards = (req: Request, res: Response) => Card.find({})
+export const returnCards = (req: Request, res: Response, next: NextFunction) => Card.find({})
   .then((cards) => res.send({ data: cards }))
-  .catch(() => res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' }));
+  .catch(next);
 
-export const deleteCardId = (req: Request, res: Response) => {
+export const deleteCardId = (req: any, res: Response, next: NextFunction) => {
   Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
       if (!card) {
-        return res.status(ERROR_NOT_FOUND).send({ message: 'Карточка не найдена' });
+        throw new NotFound('Карточка не найдена');
+      } if (card.owner.toString() !== req.user._id) {
+        throw new DeletionError('Нельзя удалить чужую карточку');
+      } else {
+        card.deleteOne({ _id: req.params.cardId })
+          .then(() => {
+            res.send({ message: 'Карточка удалена' });
+          })
+          .catch(next);
       }
-      return res.send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Передан не корректный id карточки' });
+        next(new IncorrectData('Передан не корректный id карточки'));
+      } else {
+        next(err);
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' });
     });
 };
 
-export const createCard = (req: Request, res: Response) => {
+export const createCard = (req: Request, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
   const owner = (req as any).user?._id;
   return Card.create({ name, link, owner })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Переданы некорректные данные при создании карточки' });
+        next(new IncorrectData('Переданы некорректные данные при создании карточки'));
+      } else {
+        next(err);
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' });
     });
 };
 
-export const likeCard = (req: any, res: Response) => {
+export const likeCard = (req: any, res: Response, next: NextFunction) => {
   // eslint-disable-next-line max-len
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true, runValidators: true })
     .then((card) => {
       if (!card) {
-        return res.status(ERROR_NOT_FOUND).send({ message: 'Карточка не найдена' });
+        next(new NotFound('Карточка не найдена'));
       }
       return res.send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Передан не корректный id карточки' });
+        next(new IncorrectData('Передан не корректный id карточки'));
       }
       if (err.name === 'ValidationError') {
-        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Не корректные данные чтобы поставить лайка' });
+        next(new IncorrectData('Не корректные данные чтобы поставить лайка'));
+      } else {
+        next(err);
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' });
     });
 };
 
-export const deleteLikeCard = (req: any, res: Response) => {
+export const deleteLikeCard = (req: any, res: Response, next: NextFunction) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Передан не корректный id карточки' });
+        next(new IncorrectData('Передан не корректный id карточки'));
+      } else {
+        next(err);
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
     });
 };

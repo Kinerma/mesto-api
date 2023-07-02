@@ -1,70 +1,108 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import User from '../models/user';
-import { DEFAULT_ERROR, ERROR_NOT_FOUND, INCORRECT_DATA_ERROR } from '../errors/errors';
+import NotFound from '../errors/centralized/not-found';
+import ConflictError from '../errors/centralized/conflict-error';
+import IncorrectData from '../errors/centralized/incorrect-data';
 
-export const returnUsers = (req: Request, res: Response) => User.find({})
+export const returnUsers = (req: Request, res: Response, next: NextFunction) => User.find({})
   .then((users) => res.send({ data: users }))
-  .catch(() => res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' }));
+  .catch(next);
 
-export const returnUsersId = (req: Request, res: Response) => {
+export const returnUsersId = (req: Request, res: Response, next: NextFunction) => {
   User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
-        return res.status(ERROR_NOT_FOUND).send({ message: 'Пользователь не найден' });
+        return next(new NotFound('Пользователь не найден'));
       }
       return res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Передан некорректный id профиля' });
+        next(new IncorrectData('Передан некорректный id профиля'));
+      } else {
+        next(err);
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' });
     });
 };
 
-export const createUser = (req: Request, res: Response) => {
-  const { name, about, avatar } = req.body;
-  return User.create({ name, about, avatar })
+export const createUser = (req: Request, res: Response, next: NextFunction) => {
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+  bcrypt
+    .hash(password, 10)
+    .then((hash) => User.create({
+      name, about, avatar, password: hash, email,
+    }))
     .then((user) => res.send({ data: user }))
-    // eslint-disable-next-line consistent-return
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Переданы некорректные данные при обновлении профиля' });
+        next(new IncorrectData('Переданы некорректные данные при обновлении профиля'));
+      } else if (err.code === 11000) {
+        next(new ConflictError('Данный пользователь уже существует'));
+      } else {
+        next(err);
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' });
     });
 };
 
-export const updateUser = (req: any, res: Response) => {
+export const updateUser = (req: any, res: Response, next: NextFunction) => {
   const { name, about } = req.body;
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        return res.status(ERROR_NOT_FOUND).send({ message: 'Пользователь не найден' });
+        return next(new NotFound('Пользователь не найден'));
       }
       return res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Переданы некорректные данные при обновлении профиля' });
+        next(new IncorrectData('Переданы некорректные данные при обновлении профиля'));
+      } else {
+        next(err);
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' });
     });
 };
 
-export const updateAvatar = (req: any, res: Response) => {
+export const updateAvatar = (req: any, res: Response, next: NextFunction) => {
   const { avatar } = req.body;
+  if (avatar === undefined) {
+    next(new IncorrectData('Переданы некорректные данные при обновлении аватара'));
+  }
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        return res.status(ERROR_NOT_FOUND).send({ message: 'Пользователь не найден' });
+        return next(new NotFound('Пользователь не найден'));
       }
       return res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(INCORRECT_DATA_ERROR).send({ message: 'Переданы некорректные данные при обновлении аватара' });
+        return next(new IncorrectData('Переданы некорректные данные при обновлении аватара'));
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'Произошла ошибка' });
+      return next(err);
+    });
+};
+
+export const login = (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      res.send({
+        token: jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' }),
+      });
+    })
+    .catch(next);
+};
+
+export const getUser = (req: Request, res: Response, next: NextFunction) => {
+  User.findById(req.params.userId)
+    .then((user) => {
+      if (!user) {
+        return next(new NotFound('Пользователь не найден'));
+      }
+      return res.send({ data: user });
     });
 };
