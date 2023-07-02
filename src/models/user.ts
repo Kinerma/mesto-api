@@ -1,6 +1,9 @@
-import { model, Schema } from 'mongoose';
-// @ts-ignore
+import {
+  model, Schema, Model, Document,
+} from 'mongoose';
 import validator from 'validator';
+import bcrypt from 'bcrypt';
+import Authorization from '../errors/centralized/authorization-error';
 
 export interface IUser {
   name: string;
@@ -10,7 +13,12 @@ export interface IUser {
   password: string
 }
 
-const userSchema = new Schema<IUser>({
+interface UserModel extends Model<IUser> {
+  // eslint-disable-next-line no-unused-vars
+  findUserByCredentials: (email: string, password: string) => Promise<Document<unknown, any, IUser>>
+}
+
+const userSchema = new Schema<IUser, UserModel>({
   name: {
     type: String,
     minLength: 2,
@@ -47,4 +55,20 @@ const userSchema = new Schema<IUser>({
   },
 });
 
-export default model<IUser>('user', userSchema);
+userSchema.static('findUserByCredentials', function findUserByCredentials(email: string, password: string) {
+  return this.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) {
+        return Promise.reject(new Authorization('Неправильные почта или пароль'));
+      }
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            return Promise.reject(new Authorization('Неправильные почта или пароль'));
+          }
+          return user;
+        });
+    });
+});
+
+export default model<IUser, UserModel>('user', userSchema);
