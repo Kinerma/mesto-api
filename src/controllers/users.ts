@@ -29,14 +29,19 @@ export const returnUsersId = (req: Request, res: Response, next: NextFunction) =
 
 export const createUser = (req: Request, res: Response, next: NextFunction) => {
   const {
-    name, about, avatar, email, password,
+    name, about, avatar, password,
   } = req.body;
-  bcrypt
-    .hash(password, 10)
+  bcrypt.hash(password, 10)
     .then((hash) => User.create({
-      name, about, avatar, password: hash, email,
+      name, about, avatar, password: hash, email: req.body.email,
     }))
-    .then((user) => res.send({ data: user }))
+    .then((user) => res.send({
+      _id: user._id,
+      name: user.name,
+      about: user.about,
+      avatar: user.avatar,
+      email: user.email,
+    }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new IncorrectData('Переданы некорректные данные при обновлении профиля'));

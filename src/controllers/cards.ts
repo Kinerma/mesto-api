@@ -16,7 +16,7 @@ export const deleteCardId = (req: any, res: Response, next: NextFunction) => {
       } if (card.owner.toString() !== req.user._id) {
         throw new DeletionError('Нельзя удалить чужую карточку');
       } else {
-        card.deleteOne({ _id: req.params.cardId })
+        card.deleteOne()
           .then(() => {
             res.send({ message: 'Карточка удалена' });
           })
@@ -48,7 +48,7 @@ export const createCard = (req: Request, res: Response, next: NextFunction) => {
 
 export const likeCard = (req: any, res: Response, next: NextFunction) => {
   // eslint-disable-next-line max-len
-  Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true, runValidators: true })
+  Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
     .then((card) => {
       if (!card) {
         next(new NotFound('Карточка не найдена'));
@@ -58,9 +58,6 @@ export const likeCard = (req: any, res: Response, next: NextFunction) => {
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new IncorrectData('Передан не корректный id карточки'));
-      }
-      if (err.name === 'ValidationError') {
-        next(new IncorrectData('Не корректные данные чтобы поставить лайка'));
       } else {
         next(err);
       }
