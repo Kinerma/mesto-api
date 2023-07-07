@@ -40,4 +40,4 @@ const cardSchema = new Schema<ICard>({
   },
 });
 
-export default model<ICard>('Card', cardSchema);
+export default model<ICard>('card', cardSchema);
